@@ -342,7 +342,6 @@ class LineControl:
     def shutdown(self, *, reason: str) -> dict[str, Any]:
         """Stop the sections in the only permitted order."""
 
-        self.cool.request_stop(reason=reason)
         steps = [
             self.stop_sterilization(reason=reason),
             self.stop_cooling(reason=reason),

@@ -106,8 +106,9 @@ class BalanceTank:
         return self._commit("drain", volume, reason)
 
     def stop(self, *, reason: str) -> dict[str, Any]:
-        """The tank stops whenever the line-level stop reaches it."""
+        """The tank may only stop once the cooling section has stopped."""
 
+        self.gates.require_open(gate_names.COOLING_STOPPED, action="balance-stop")
         if self._stopped:
             raise StateError("the balance tank is already stopped", tank="balance")
         self._stopped = True
