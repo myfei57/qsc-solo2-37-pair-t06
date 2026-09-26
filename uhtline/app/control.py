@@ -330,17 +330,23 @@ class LineControl:
         return entry
 
     def stop_cooling(self, *, reason: str) -> dict[str, Any]:
+        self.gates.require_open(gate_names.STERILIZATION_STOPPED, action="cooling-stop")
         entry = self.cool.stop(reason=reason)
         self._count("cool.stop")
         return entry
 
     def stop_balance(self, *, reason: str) -> dict[str, Any]:
+        self.gates.require_open(gate_names.COOLING_STOPPED, action="balance-stop")
         entry = self.balance.stop(reason=reason)
         self._count("balance.stop")
         return entry
 
     def shutdown(self, *, reason: str) -> dict[str, Any]:
-        """Stop the sections in the only permitted order."""
+        """Hand the line down section by section: sterilize, cool, then balance.
+
+        Every stop waits for the permit the previous section opens once it has
+        stopped, so a section that has not settled blocks every later step.
+        """
 
         self.cool.request_stop(reason=reason)
         steps = [

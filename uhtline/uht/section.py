@@ -106,6 +106,7 @@ class UhtSection:
         )
         self._running = True
         self._target_c = target
+        self.gates.close(gate_names.STERILIZATION_STOPPED, reason="sterilization section running")
         entry = {
             "action": "ramp",
             "target_c": target,
@@ -151,12 +152,19 @@ class UhtSection:
         )
 
     def stop(self, *, reason: str) -> dict[str, Any]:
+        """Stop the section and hand the sterilization-stopped permit to cooling."""
+
         if not self._running:
             raise StateError("the sterilization section is already stopped", section="uht")
         self._running = False
         record = self.events.append("sterilization-stop", {"reason": str(reason)})
         entry = {"action": "stop", "record_id": record.record_id, "reason": str(reason), "timestamp": self.clock.timestamp()}
         self._history.append(entry)
+        self.gates.open(
+            gate_names.STERILIZATION_STOPPED,
+            reason=str(reason),
+            evidence=record.record_id,
+        )
         self.persist()
         self.audit.record("uht-stop", "uht", str(reason), cause=None)
         return dict(entry)

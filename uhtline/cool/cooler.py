@@ -73,16 +73,17 @@ class Cooler:
         if self._running:
             raise StateError("the cooling section is already running", section="cool")
         self._running = True
+        self.gates.close(gate_names.COOLING_STOPPED, reason="cooling section running")
         return self._commit("start", str(reason))
 
     def stop(self, *, reason: str) -> dict[str, Any]:
-        """Cooling may only stop once a stop has been requested for the line."""
+        """Cooling may only stop once the sterilization section has stopped."""
 
-        if not self._stop_requested:
-            raise StateError("no line stop has been requested", section="cool", action="cooling-stop")
+        self.gates.require_open(gate_names.STERILIZATION_STOPPED, action="cooling-stop")
         if not self._running:
             raise StateError("the cooling section is already stopped", section="cool")
         self._running = False
+        self.gates.open(gate_names.COOLING_STOPPED, reason=str(reason))
         return self._commit("stop", str(reason))
 
     def set_outlet(self, value_c: float, *, reason: str) -> dict[str, Any]:
